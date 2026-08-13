@@ -34,14 +34,13 @@ This transformation enables the application of standard classification algorithm
 
 ## c. Models Used and Evaluation Metrics
 
-The following six classification models were implemented using the same dataset and preprocessing pipeline:
+The following five classification models were implemented using the same dataset and preprocessing pipeline:
 
 1. Logistic Regression  
 2. Decision Tree Classifier  
 3. k-Nearest Neighbors (kNN)  
 4. Naive Bayes (Gaussian)  
 5. Random Forest (Ensemble)  
-6. XGBoost (Ensemble)
 
 ### Evaluation Metrics Used  
 
@@ -65,7 +64,6 @@ Each model was evaluated using the following metrics:
 | kNN | 0.8378 | 0.9122 | 0.8186 | 0.7159 | 0.7638 | 0.6445 |
 | Naive Bayes | 0.4203 | 0.7891 | 0.3871 | 1.0 | 0.5582 | 0.1817 |
 | Random Forest (Ensemble) | 0.4068 | 0.3579 | 0.1613 | 0.1476 | 0.1541 | -0.302 |
-| XGBoost (Ensemble) | 0.5041 | 0.4029 | 0.0714 | 0.0295 | 0.0418 | -0.2584 |
 
 *(Metric values are computed dynamically in the Streamlit application.)*
 
@@ -80,7 +78,6 @@ Each model was evaluated using the following metrics:
 | kNN | Achieves the best overall performance across all evaluation metrics, benefiting significantly from feature scaling and local neighborhood learning. |
 | Naive Bayes | Exhibits very high recall but low precision, suggesting a strong bias toward predicting the positive class due to feature independence assumptions. |
 | Random Forest (Ensemble) | Underperforms in this implementation, with negative MCC indicating poor generalization despite ensemble averaging. |
-| XGBoost (Ensemble) | Performs poorly on this dataset, likely due to insufficient tuning or dataset characteristics not favoring gradient boosting. |
 
 ---
 
