@@ -1,30 +1,40 @@
 import streamlit as st
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from pathlib import Path
 
-from sklearn.metrics import (
-    accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score,
-    roc_auc_score,
-    matthews_corrcoef,
-    confusion_matrix,
-    classification_report
-)
+# Import optional dependencies and show a helpful message if any are missing
+try:
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    from pathlib import Path
 
-from sklearn.model_selection import train_test_split
+    from sklearn.metrics import (
+        accuracy_score,
+        precision_score,
+        recall_score,
+        f1_score,
+        roc_auc_score,
+        matthews_corrcoef,
+        confusion_matrix,
+        classification_report,
+    )
 
-from model.preprocessing import load_and_preprocess
-from model import (
-    logistic_regression,
-    decision_tree,
-    knn,
-    naive_bayes,
-    random_forest
-)
+    from sklearn.model_selection import train_test_split
+
+    from model.preprocessing import load_and_preprocess
+    from model import (
+        logistic_regression,
+        decision_tree,
+        knn,
+        naive_bayes,
+        random_forest,
+    )
+except Exception as e:
+    st.error("Missing Python package required to run the app.")
+    st.markdown("Install dependencies with:\n\n```bash\n# activate your virtualenv if needed\npython -m pip install -r requirements.txt\n```")
+    st.markdown("If you're running inside a virtual environment on the server, activate it first. Example for a venv:\n\n```bash\nsource /home/adminuser/venv/bin/activate\npython -m pip install -r /mount/src/bits-aiml-assignment-2/requirements.txt\n```")
+    st.markdown("Error details:")
+    st.code(str(e))
+    st.stop()
 
 # ---------------- PAGE CONFIG ---------------- #
 
