@@ -49,7 +49,7 @@ with input_col1:
     )
 
 # Dataset download option
-    dataset_path = Path("data/Absenteeism_at_work.csv")
+    dataset_path = Path("Data/Absenteeism_at_work.csv")
     if dataset_path.exists():
         with open(dataset_path, "rb") as f:
             st.download_button(
