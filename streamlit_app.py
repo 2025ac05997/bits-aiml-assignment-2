@@ -1,301 +1,166 @@
 import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from pathlib import Path
 
-# Import optional dependencies and show a helpful message if any are missing
-try:
-    import pandas as pd
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    from pathlib import Path
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    roc_auc_score,
+    matthews_corrcoef,
+    confusion_matrix,
+    classification_report
+)
 
-    from sklearn.metrics import (
-        accuracy_score,
-        precision_score,
-        recall_score,
-        f1_score,
-        roc_auc_score,
-        matthews_corrcoef,
-        confusion_matrix,
-        classification_report,
-    )
+# Import preprocessing and model modules
+from model.preprocessing import load_and_preprocess
+from model import (
+    logistic_regression,
+    decision_tree,
+    knn,
+    naive_bayes,
+    random_forest
+)
 
-    from sklearn.model_selection import train_test_split
-
-    from model.preprocessing import load_and_preprocess
-    from model import (
-        logistic_regression,
-        decision_tree,
-        knn,
-        naive_bayes,
-        random_forest,
-    )
-except Exception as e:
-    st.error("Missing Python package required to run the app.")
-    st.markdown("Install dependencies with:\n\n```bash\n# activate your virtualenv if needed\npython -m pip install -r requirements.txt\n```")
-    st.markdown("If you're running inside a virtual environment on the server, activate it first. Example for a venv:\n\n```bash\nsource /home/adminuser/venv/bin/activate\npython -m pip install -r /mount/src/bits-aiml-assignment-2/requirements.txt\n```")
-    st.markdown("Error details:")
-    st.code(str(e))
-    st.stop()
-
-# ---------------- PAGE CONFIG ---------------- #
-
+# ---------------------- PAGE CONFIG ----------------------
 st.set_page_config(
     page_title="Absenteeism at Work - Classification",
     layout="wide"
 )
 
-st.title("Absenteeism at Work - Classification Models")
+st.title("Absenteeism at Work – Classification Models")
+st.markdown(
+    """
+    This application demonstrates multiple classification models on the
+    **UCI Absenteeism at Work** dataset.
+    """
+)
 
-st.markdown("""
-This application demonstrates multiple machine learning classification
-models on the UCI Absenteeism at Work dataset.
-""")
-
-# ---------------- INPUT SECTION ---------------- #
-
-input_col1, input_col2 = st.columns(2)
+# ---------------- INPUT SECTION (COMPACT) ----------------
+input_col1, input_col2 = st.columns([1, 1])
 
 with input_col1:
-
     uploaded_file = st.file_uploader(
-        "Upload Dataset CSV",
-        type=["csv"]
+        "Upload Absenteeism CSV",
+        type="csv"
     )
 
+# Dataset download option
     dataset_path = Path("data/Absenteeism_at_work.csv")
-
     if dataset_path.exists():
-
         with open(dataset_path, "rb") as f:
-
             st.download_button(
-                label="Download Sample Dataset",
+                label="Download Dataset (CSV)",
                 data=f,
                 file_name="Absenteeism_at_work.csv",
                 mime="text/csv"
             )
+    else:
+        st.warning("Dataset file not found in data folder.")
+
+
 
 with input_col2:
+    model_map = {
+        "Logistic Regression": logistic_regression,
+        "Decision Tree": decision_tree,
+        "KNN": knn,
+        "Naive Bayes": naive_bayes,
+        "Random Forest": random_forest
+    }
 
     selected_model_name = st.selectbox(
         "Select Model",
-        [
-            "Logistic Regression",
-            "Decision Tree",
-            "KNN",
-            "Naive Bayes",
-            "Random Forest"
-        ]
+        list(model_map.keys())
     )
 
 st.divider()
 
-# ---------------- MAIN LOGIC ---------------- #
-
+# ---------------------- MAIN LOGIC ----------------------
 if uploaded_file:
 
     try:
-
-        # Load data
+        # Load and preprocess data
         X, X_scaled, y = load_and_preprocess(uploaded_file)
 
-        # Train-test split
-        X_train, X_test, y_train, y_test = train_test_split(
-            X_scaled,
-            y,
-            test_size=0.20,
-            random_state=42,
-            stratify=y
-        )
-
-        model_map = {
-            "Logistic Regression": logistic_regression,
-            "Decision Tree": decision_tree,
-            "KNN": knn,
-            "Naive Bayes": naive_bayes,
-            "Random Forest": random_forest
-        }
-
-        # ==================================================
-        # COMPARISON TABLE FOR ALL MODELS
-        # ==================================================
-
-        comparison_results = []
-
-        for model_name, model_module in model_map.items():
-
-            model = model_module.train_model(
-                X_train,
-                X_train,
-                y_train
-            )
-
-            y_pred = model.predict(X_test)
-
-            if hasattr(model, "predict_proba"):
-                y_prob = model.predict_proba(X_test)[:, 1]
-            else:
-                y_prob = y_pred
-
-            comparison_results.append({
-                "ML Model": model_name,
-                "Accuracy": round(
-                    accuracy_score(y_test, y_pred),
-                    4
-                ),
-                "AUC": round(
-                    roc_auc_score(y_test, y_prob),
-                    4
-                ),
-                "Precision": round(
-                    precision_score(y_test, y_pred),
-                    4
-                ),
-                "Recall": round(
-                    recall_score(y_test, y_pred),
-                    4
-                ),
-                "F1": round(
-                    f1_score(y_test, y_pred),
-                    4
-                ),
-                "MCC": round(
-                    matthews_corrcoef(y_test, y_pred),
-                    4
-                )
-            })
-
-        comparison_df = pd.DataFrame(comparison_results)
-
-        st.subheader("Model Comparison")
-
-        st.dataframe(
-            comparison_df,
-            use_container_width=True
-        )
-
-        best_model_name = comparison_df.loc[
-            comparison_df["F1"].idxmax(),
-            "ML Model"
-        ]
-
-        st.success(
-            f"Best Performing Model (Based on F1 Score): "
-            f"{best_model_name}"
-        )
-
-        st.divider()
-
-        # ==================================================
-        # INDIVIDUAL MODEL ANALYSIS
-        # ==================================================
-
+        # Train selected model
         model_module = model_map[selected_model_name]
+        model = model_module.train_model(X, X_scaled, y)
 
-        model = model_module.train_model(
-            X_train,
-            X_train,
-            y_train
-        )
+        # Predictions
+        y_pred = model.predict(X_scaled)
+        y_prob = model.predict_proba(X_scaled)[:, 1]
 
-        y_pred = model.predict(X_test)
-
-        if hasattr(model, "predict_proba"):
-            y_prob = model.predict_proba(X_test)[:, 1]
-        else:
-            y_prob = y_pred
-
+        # ---------------- OUTPUT SECTION (50% / 50%) ----------------
         left_col, right_col = st.columns(2)
 
-        # ---------------- LEFT ---------------- #
-
+        # -------- LEFT COLUMN --------
         with left_col:
-
-            st.subheader(
-                f"{selected_model_name} Metrics"
-            )
+            st.markdown("### Evaluation Metrics")
 
             metrics = {
-                "Accuracy":
-                    accuracy_score(y_test, y_pred),
-                "AUC":
-                    roc_auc_score(y_test, y_prob),
-                "Precision":
-                    precision_score(y_test, y_pred),
-                "Recall":
-                    recall_score(y_test, y_pred),
-                "F1 Score":
-                    f1_score(y_test, y_pred),
-                "MCC":
-                    matthews_corrcoef(y_test, y_pred)
+                "Accuracy": accuracy_score(y, y_pred),
+                "AUC": roc_auc_score(y, y_prob),
+                "Precision": precision_score(y, y_pred),
+                "Recall": recall_score(y, y_pred),
+                "F1 Score": f1_score(y, y_pred),
+                "MCC": matthews_corrcoef(y, y_pred)
             }
 
-            c1, c2, c3 = st.columns(3)
+            m1, m2, m3 = st.columns(3)
+            metric_items = list(metrics.items())
 
-            metric_list = list(metrics.items())
-
-            for i, (name, value) in enumerate(metric_list):
-
+            for i, (name, value) in enumerate(metric_items):
                 if i % 3 == 0:
-                    c1.metric(name, round(value, 4))
-
+                    m1.metric(name, round(value, 4))
                 elif i % 3 == 1:
-                    c2.metric(name, round(value, 4))
-
+                    m2.metric(name, round(value, 4))
                 else:
-                    c3.metric(name, round(value, 4))
+                    m3.metric(name, round(value, 4))
 
-            st.subheader("Classification Report")
+            st.markdown("### Classification Report")
 
-            report = classification_report(
-                y_test,
+            report_dict = classification_report(
+                y,
                 y_pred,
+                target_names=[
+                    "Absenteeism < 8 Hours",
+                    "Absenteeism ≥ 8 Hours"
+                ],
                 output_dict=True
             )
 
-            report_df = pd.DataFrame(report).transpose()
+            report_df = pd.DataFrame(report_dict).transpose().round(4)
+            st.dataframe(report_df, use_container_width=True)
 
-            st.dataframe(
-                report_df.round(4),
-                use_container_width=True
-            )
-
-        # ---------------- RIGHT ---------------- #
-
+        # -------- RIGHT COLUMN --------
         with right_col:
+            st.markdown("### Confusion Matrix")
 
-            st.subheader("Confusion Matrix")
+            cm = confusion_matrix(y, y_pred)
 
-            cm = confusion_matrix(
-                y_test,
-                y_pred
-            )
-
-            fig, ax = plt.subplots(
-                figsize=(5, 4)
-            )
-
+            fig, ax = plt.subplots(figsize=(5, 4))
             sns.heatmap(
                 cm,
                 annot=True,
                 fmt="d",
                 cmap="Greens",
+                xticklabels=["< 8 Hours", "≥ 8 Hours"],
+                yticklabels=["< 8 Hours", "≥ 8 Hours"],
                 ax=ax
             )
 
-            ax.set_xlabel(
-                "Predicted"
-            )
-
-            ax.set_ylabel(
-                "Actual"
-            )
-
+            ax.set_xlabel("Predicted")
+            ax.set_ylabel("Actual")
             st.pyplot(fig)
 
     except Exception as e:
+        st.error("An error occurred while processing the dataset.")
+        st.exception(e)
 
-        st.error(
-            "An error occurred while processing the file."
-        )
-
+    except Exception as e:
+        st.error("An error occurred while processing the file.")
         st.exception(e)
